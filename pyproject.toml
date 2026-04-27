@@ -1,0 +1,66 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "econophysics-langevin"
+version = "0.1.0"
+description = "Reconstruccion de dinamicas estocasticas tipo Langevin para log-retornos del S&P 500 mediante coeficientes de Kramers-Moyal."
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [{ name = "Diego Rodolfo Sarceno Ramirez", email = "dsarceno68@gmail.com" }]
+license = { text = "MIT" }
+keywords = ["econophysics", "langevin", "fokker-planck", "kramers-moyal", "stochastic-processes", "spx"]
+
+dependencies = [
+    "numpy>=1.26",
+    "scipy>=1.11",
+    "pandas>=2.1",
+    "yfinance>=0.2.40",
+    "matplotlib>=3.8",
+    "seaborn>=0.13",
+    "statsmodels>=0.14",
+    "pydantic>=2.5",
+    "pyyaml>=6.0",
+    "tqdm>=4.66",
+    "rich>=13.7",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4",
+    "pytest-cov>=4.1",
+    "ruff>=0.1.9",
+    "mypy>=1.7",
+    "ipython>=8.18",
+    "jupyterlab>=4.0",
+]
+
+[project.scripts]
+econophys = "scripts.run_pipeline:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+testpaths = ["tests"]
+addopts = "-ra -q --strict-markers"
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: integration tests requiring network or large compute",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+select = ["E", "F", "W", "I", "N", "B", "UP"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+ignore_missing_imports = true

@@ -1,0 +1,109 @@
+# --- FILE: configs/pipeline.yaml ---
+# Configuracion declarativa del pipeline de reconstruccion estocastica.
+# Cada bloque mapea a un stage del orquestador en scripts/run_pipeline.py.
+# Trazabilidad: ver docs/THEORY_TO_CODE.md para mapeo tesis <-> modulo.
+
+project:
+  name: "econophysics-langevin-spx"
+  random_seed: 20260426
+  output_root: "data/processed"
+  figures_root: "reports/figures"
+  tables_root: "reports/tables"
+
+logging:
+  level: "INFO"
+  file: "logs/pipeline.log"
+  jsonl: "logs/pipeline.jsonl"
+
+data:
+  source: "yfinance"
+  ticker: "^GSPC"           # S&P 500 cash index
+  fallback_ticker: "SPY"
+  start: "1990-01-01"
+  end: "2024-12-31"
+  cache_dir: "data/raw"
+  field: "Adj Close"
+
+preprocessing:
+  log_returns: true
+  drop_na: true
+  standardize:
+    enabled: true
+    method: "global"        # global | rolling
+    rolling_window: 252
+  winsorize:
+    enabled: false
+    quantiles: [0.001, 0.999]
+
+statistics:
+  acf:
+    nlags: 60
+  acf_squared:
+    nlags: 60
+  histogram_bins: 100
+  qq_distribution: "norm"
+
+markov_test:
+  delta_t_steps: [1, 2, 5, 10, 20]   # in trading days
+  n_bins_state: 25
+  bootstrap_samples: 200
+  bootstrap_confidence: 0.95
+  divergence: "jensen_shannon"        # jensen_shannon | kl
+
+kramers_moyal:
+  n_bins: 50
+  binning: "quantile"                  # quantile | uniform
+  state_range: null                    # null => auto from data
+  delta_t_step: 1
+  min_obs_per_bin: 30
+  smoothing:
+    enabled: true
+    method: "savgol"
+    window: 7
+    polyorder: 3
+  bootstrap:
+    enabled: true
+    n_resamples: 200
+    confidence: 0.95
+  pawula:
+    compute_orders: [4, 6]
+
+models:
+  m0_gaussian:
+    enabled: true
+  m1_ornstein_uhlenbeck:
+    enabled: true
+    fit_method: "mle"                  # mle | km
+  m2_langevin_reconstructed:
+    enabled: true
+    drift_interpolation: "cubic"
+    diffusion_interpolation: "cubic"
+    diffusion_floor: 1.0e-8
+
+simulation:
+  method: "euler_maruyama"
+  n_paths: 500
+  n_steps: null                        # null => match observed length
+  dt: 1.0
+  burn_in: 200
+  initial_condition: "data_first"      # data_first | zero | sample
+
+validation:
+  metrics:
+    - "ks_distance"
+    - "jensen_shannon"
+    - "moments"
+    - "acf_squared_mse"
+    - "tail_index_hill"
+  windows:
+    enabled: true
+    size_days: 504                     # ~2 trading years
+    step_days: 126                     # ~6 months
+  noneq_evidence:
+    compute_probability_current: true
+
+reporting:
+  generate_markdown: true
+  generate_latex_tables: true
+  figure_format: "pdf"
+  figure_dpi: 150
